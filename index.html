@@ -251,6 +251,11 @@
       text-transform: uppercase;
     }
 
+    .palette-list [data-template-id="octave-4-heading"],
+    .palette-list [data-template-id="octave-5-heading"] {
+      margin-top: 1.5rem;
+    }
+
     .palette-list {
       display: flex;
       flex-direction: row;
@@ -676,6 +681,10 @@
         padding: 0.4rem 0;
       }
 
+      .octave-heading {
+        grid-column: 1 / -1;
+      }
+
       .palette-note {
         width: 100%;
       }
@@ -750,7 +759,7 @@
       <!--SOUND CONTROL-->
       <div class="sound-control" role="group" aria-label="Control de volumen">
        <label for="sound-volume-input">Volumen</label>
-       <input id="sound-volume-input" type="range" min="0" max="5" step="0.1" value="1.5" aria-label="Volumen de campanas y metrónomo">
+       <input id="sound-volume-input" type="range" min="0" max="50" step="0.1" value="1.5" aria-label="Volumen de campanas y metrónomo">
        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">1.5</output>
        <button id="sound-toggle" type="button" class="sound-mute-toggle" aria-pressed="false" aria-label="Silenciar sonidos">
         <i data-lucide="volume-2" id="sound-on-icon" aria-hidden="true" style="width:19px;height:19px"></i>
@@ -934,8 +943,27 @@
         if (!AudioContextClass) return null;
         audioContext = new AudioContextClass();
       }
-      if (audioContext.state === "suspended") audioContext.resume();
       return audioContext;
+    }
+
+    async function activateAudioContext() {
+      try {
+        const context = ensureAudioContext();
+        if (!context) {
+          showStatus("El audio no está disponible en este navegador");
+          return null;
+        }
+        if (context.state !== "running") await context.resume();
+        if (context.state !== "running") {
+          showStatus("El navegador bloqueó el sonido. Revisa la configuración de audio del sitio y vuelve a intentarlo.");
+          return null;
+        }
+        return context;
+      } catch (error) {
+        console.error("No se pudo activar el audio del navegador.", error);
+        showStatus("No se pudo activar el sonido. Revisa la configuración de audio del sitio y vuelve a intentarlo.");
+        return null;
+      }
     }
 
     function showStatus(message) {
@@ -946,17 +974,14 @@
       }, 1500);
     }
 
-    function playFrequency(frequency, visualElement, noteName) {
+    async function playFrequency(frequency, visualElement, noteName) {
       if (muted) {
         showStatus("El sonido está silenciado");
         return;
       }
 
-      const context = ensureAudioContext();
-      if (!context) {
-        showStatus("El audio no está disponible en este navegador");
-        return;
-      }
+      const context = await activateAudioContext();
+      if (!context) return;
 
       const now = context.currentTime;
       const masterGain = context.createGain();
@@ -1288,7 +1313,7 @@
       showStatus(movementEnabled ? "Movimiento activado" : "Movimiento bloqueado");
     });
 
-    soundToggle.addEventListener("click", () => {
+    soundToggle.addEventListener("click", async () => {
       muted = !muted;
       soundToggle.setAttribute("aria-pressed", String(muted));
       soundToggle.setAttribute("aria-label", muted ? "Activar sonidos" : "Silenciar sonidos");
@@ -1298,14 +1323,15 @@
       if (muted) {
         showStatus("Sonido silenciado");
       } else {
-        ensureAudioContext();
+        const context = await activateAudioContext();
+        if (!context) return;
         showStatus("Sonido activado");
       }
     });
 
     soundVolumeInput.addEventListener("input", () => {
       soundVolume = Number(soundVolumeInput.value);
-      soundVolumeValue.value = soundVolume.toFixed(1);
+      soundVolumeValue.value = soundVolume.toFixed();
       soundVolumeValue.textContent = soundVolume.toFixed(1);
     });
 
@@ -1358,16 +1384,11 @@
       metroTimerId = setTimeout(metronomeScheduler, metroLookahead);
     }
 
-    function toggleMetronome() {
-      const context = ensureAudioContext();
-      if (!context) {
-        showStatus("El audio no está disponible");
-        return;
-      }
-
-      isMetroPlaying = !isMetroPlaying;
-
-      if (isMetroPlaying) {
+    async function toggleMetronome() {
+      if (!isMetroPlaying) {
+        const context = await activateAudioContext();
+        if (!context) return;
+        isMetroPlaying = true;
         metroNextNoteTime = context.currentTime + 0.05;
         metroPlayIcon.classList.add("hidden");
         metroStopIcon.classList.remove("hidden");
@@ -1376,6 +1397,7 @@
         showStatus("Metrónomo iniciado");
         metronomeScheduler();
       } else {
+        isMetroPlaying = false;
         clearTimeout(metroTimerId);
         metroPlayIcon.classList.remove("hidden");
         metroStopIcon.classList.add("hidden");
