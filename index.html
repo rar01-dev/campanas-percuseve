@@ -793,8 +793,8 @@
       <div class="sound-control" role="group" aria-label="Control de volumen">
        <div class="sound-control-row">
         <label for="sound-volume-input">Volumen</label>
-        <input id="sound-volume-input" type="range" min="0" max="100" step="0.1" value="50" aria-label="Volumen de campanas y metrónomo">
-        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">50.0</output>
+        <input id="sound-volume-input" type="range" min="0" max="100" step="1.0" value="50" aria-label="Volumen de campanas y metrónomo">
+        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">100.0</output>
         <button id="sound-help-toggle" type="button" class="sound-help-toggle" aria-expanded="false" aria-controls="sound-help-message">¿No se oye?</button>
         <button id="sound-toggle" type="button" class="sound-mute-toggle" aria-pressed="false" aria-label="Silenciar sonidos">
          <i data-lucide="volume-2" id="sound-on-icon" aria-hidden="true" style="width:19px;height:19px"></i>
@@ -886,8 +886,6 @@
     let audioContext = null;
     let muted = false;
     let soundVolume = Number(soundVolumeInput.value);
-    const preloadedBellAudios = new Map();
-    const activeBellAudios = new Map();
     let statusTimer = null;
     let nextId = 1;
     let activeCircleDrag = null;
@@ -1033,133 +1031,50 @@
       }, 1500);
     }
 
-    function updateBellAudioVolumes() {
-      activeBellAudios.forEach(({ gainNode }) => {
-        gainNode.gain.setTargetAtTime(
-          getBellGain(),
-          gainNode.context.currentTime,
-          0.02
-        );
-      });
-    }
-
-    function getBellGain() {
-      return muted ? 0 : 2 * soundVolume / Number(soundVolumeInput.max);
-    }
-
-    function getBellAudioSource(noteType) {
-      const octaveSuffix = noteType.match(/[35]$/);
-      let octave = octaveSuffix ? Number(octaveSuffix[0]) : 4;
-      let pitch = octaveSuffix ? noteType.slice(0, -1) : noteType;
-
-      if (pitch === "mis") pitch = "fa";
-      if (pitch === "sis") {
-        pitch = "do";
-        octave += 1;
-      }
-
-      const noteFiles = {
-        do: "Do",
-        dos: "Do#",
-        re: "Re",
-        res: "Re#",
-        mi: "Mi",
-        fa: "Fa",
-        fas: "Fa#",
-        sol: "Sol",
-        sols: "Sol#",
-        la: "La",
-        las: "La#",
-        si: "Si"
-      };
-      const fileNote = noteFiles[pitch];
-      if (!fileNote || octave < 3) {
-        throw new Error("No hay un sonido definido para la nota " + noteType);
-      }
-
-      const assetOctave = Math.min(octave, 5);
-      const folder = assetOctave + "º Octava";
-      const fileName = fileNote + assetOctave + ".mp3";
-      const source = "./Sonidos/" + encodeURIComponent(folder) + "/" + encodeURIComponent(fileName);
-      return { source, playbackRate: 2 ** (octave - assetOctave) };
-    }
-
-    function createBellAudioInstance(source) {
-      const audio = new Audio();
-      audio.preload = "auto";
-      const instance = { audio, sourceNode: null, gainNode: null, playing: false };
-      const cleanUpAudio = () => {
-        instance.playing = false;
-        activeBellAudios.delete(audio);
-      };
-      audio.addEventListener("ended", cleanUpAudio);
-      audio.addEventListener("error", cleanUpAudio);
-      audio.src = source;
-      audio.load();
-      return instance;
-    }
-
-    function preloadBellAudio(noteType) {
-      const { source } = getBellAudioSource(noteType);
-      let pool = preloadedBellAudios.get(source);
-      if (!pool) {
-        pool = [createBellAudioInstance(source)];
-        preloadedBellAudios.set(source, pool);
-      }
-      return pool;
-    }
-
-    async function playBellSound(noteType, visualElement, noteName) {
+    async function playFrequency(frequency, visualElement, noteName) {
       if (muted || soundVolume <= 0) {
         showStatus(muted ? "El sonido está silenciado" : "Sube el volumen para escuchar las campanas y el metrónomo");
         return;
       }
 
-      const { source, playbackRate } = getBellAudioSource(noteType);
       const context = await activateAudioContext();
       if (!context) return;
 
-      const pool = preloadBellAudio(noteType);
-      let instance = pool.find((candidate) => !candidate.playing);
-      if (!instance) {
-        instance = createBellAudioInstance(source);
-        pool.push(instance);
+      const now = context.currentTime;
+      const masterGain = context.createGain();
+      const oscillator = context.createOscillator();
+      const warmth = context.createOscillator();
+      const warmthGain = context.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(Number(frequency), now);
+      warmth.type = "triangle";
+      warmth.frequency.setValueAtTime(Number(frequency) * 2, now);
+      warmthGain.gain.setValueAtTime(0.018, now);
+
+      // Mantiene el tono audible sin saturar ni sonar excesivamente fuerte.
+      masterGain.gain.setValueAtTime(0.0001, now);
+      masterGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, soundVolume), now + 0.018);
+      masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+
+      oscillator.connect(masterGain);
+      warmth.connect(warmthGain);
+      warmthGain.connect(masterGain);
+      masterGain.connect(context.destination);
+
+      oscillator.start(now);
+      warmth.start(now);
+      oscillator.stop(now + 0.62);
+      warmth.stop(now + 0.62);
+
+      if (visualElement.classList.contains("note-circle")) {
+        visualElement.classList.remove("is-playing");
+        void visualElement.offsetWidth;
+        visualElement.classList.add("is-playing");
+        window.setTimeout(() => visualElement.classList.remove("is-playing"), 390);
       }
-      if (pool.length === 1) {
-        pool.push(createBellAudioInstance(source));
-      }
 
-      const { audio } = instance;
-      if (audio.readyState > 0) audio.currentTime = 0;
-      audio.playbackRate = playbackRate;
-
-      try {
-        if (!instance.gainNode) {
-          instance.sourceNode = context.createMediaElementSource(audio);
-          instance.gainNode = context.createGain();
-          instance.sourceNode.connect(instance.gainNode);
-          instance.gainNode.connect(context.destination);
-        }
-        instance.gainNode.gain.setValueAtTime(getBellGain(), context.currentTime);
-        instance.playing = true;
-        activeBellAudios.set(audio, { gainNode: instance.gainNode });
-
-        await audio.play();
-
-        if (visualElement.classList.contains("note-circle")) {
-          visualElement.classList.remove("is-playing");
-          void visualElement.offsetWidth;
-          visualElement.classList.add("is-playing");
-          window.setTimeout(() => visualElement.classList.remove("is-playing"), 390);
-        }
-
-        showStatus("Nota " + noteName + " reproducida");
-      } catch (error) {
-        instance.playing = false;
-        activeBellAudios.delete(audio);
-        console.error("No se pudo reproducir el sonido de la campana " + noteName + ".", error);
-        showStatus("No se pudo reproducir el sonido de la campana " + noteName);
-      }
+      showStatus("Nota " + noteName + " reproducida");
     }
 
     function clamp(value, min, max) {
@@ -1220,7 +1135,6 @@
       circle.dataset.noteName = noteData.type === "do5" ? "DO₅" : noteData.name;
       circle.dataset.noteType = noteData.type;
       circle.dataset.frequency = String(noteData.frequency);
-      preloadBellAudio(noteData.type);
       circle.setAttribute("aria-label", "Reproducir " + (noteData.type === "do5" ? "DO₅" : noteData.name) + ". Arrastra para mover o eliminar.");
       const octave = noteData.type.endsWith("3") ? "₃" : noteData.type.endsWith("5") ? "₅" : "₄";
       label.textContent = noteData.name + octave;
@@ -1270,7 +1184,7 @@
       circle.addEventListener("pointerdown", (event) => {
         if (event.button !== undefined && event.button !== 0) return;
         if (!movementEnabled) {
-          playBellSound(circle.dataset.noteType, circle, circle.dataset.noteName);
+          playFrequency(circle.dataset.frequency, circle, circle.dataset.noteName);
           event.preventDefault();
           return;
         }
@@ -1324,7 +1238,7 @@
         if (shouldDelete) {
           removeCircle(circle);
         } else if (!cancelled && !wasMoved) {
-          playBellSound(circle.dataset.noteType, circle, circle.dataset.noteName);
+          playFrequency(circle.dataset.frequency, circle, circle.dataset.noteName);
         } else if (!cancelled) {
           showStatus("Círculo " + circle.dataset.noteName + " movido");
         }
@@ -1338,7 +1252,7 @@
       circle.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          playBellSound(circle.dataset.noteType, circle, circle.dataset.noteName);
+          playFrequency(circle.dataset.frequency, circle, circle.dataset.noteName);
           return;
         }
 
@@ -1385,7 +1299,7 @@
         frequency: Number(palette.dataset.frequency)
       };
       const circle = createCircle(data, clientX, clientY);
-      playBellSound(data.type, circle, data.name);
+      playFrequency(data.frequency, circle, data.name);
       showStatus("Círculo " + data.name + " añadido");
     }
 
@@ -1464,7 +1378,6 @@
 
     soundToggle.addEventListener("click", async () => {
       muted = !muted;
-      updateBellAudioVolumes();
       soundToggle.setAttribute("aria-pressed", String(muted));
       soundToggle.setAttribute("aria-label", muted ? "Activar sonidos" : "Silenciar sonidos");
       document.getElementById("sound-on-icon").classList.toggle("hidden", muted);
@@ -1481,7 +1394,6 @@
 
     soundVolumeInput.addEventListener("input", () => {
       soundVolume = Number(soundVolumeInput.value);
-      updateBellAudioVolumes();
       soundVolumeValue.value = soundVolume.toFixed();
       soundVolumeValue.textContent = soundVolume.toFixed(1);
     });
