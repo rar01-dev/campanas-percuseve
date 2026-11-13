@@ -128,8 +128,9 @@
       align-items: center;
       justify-content: center;
       gap: 0.55rem;
-      border: 2px solid var(--ink);
-      border-radius: 999px;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      background: #fff;
       padding: 0.7rem 1rem;
       box-shadow: 4px 4px 0 var(--shadow);
       transition: transform 140ms ease, box-shadow 140ms ease;
@@ -155,7 +156,8 @@
 
     .sound-control {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
       gap: 0.55rem;
       padding: 0.45rem 0.65rem;
       border: 3px solid var(--ink);
@@ -163,6 +165,13 @@
       box-shadow: 4px 4px 0 var(--shadow);
       font-size: 0.75rem;
       font-weight: 700;
+      background: #ffffff;
+    }
+
+    .sound-control-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
     }
 
     .sound-control input[type="range"] {
@@ -172,7 +181,8 @@
     }
 
     .sound-control input[type="range"]:focus-visible,
-    .sound-mute-toggle:focus-visible {
+    .sound-mute-toggle:focus-visible,
+    .sound-help-toggle:focus-visible {
       outline: 3px solid #1677ff;
       outline-offset: 3px;
     }
@@ -190,8 +200,34 @@
       place-items: center;
       border: 2px solid var(--ink);
       border-radius: 50%;
-      background: #fff8e8;
+      background: #ffffff;
       cursor: pointer;
+    }
+
+    .sound-help-toggle {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.68rem;
+      font-weight: 500;
+      opacity: 0.8;
+      text-decoration: none;
+      border-bottom: 1px dotted currentColor;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .sound-help-toggle:hover {
+      opacity: 1;
+    }
+
+    .sound-help-message {
+      max-width: 290px;
+      margin: 0;
+      font-weight: 500;
+      line-height: 1.4;
     }
 
     .toggle-state {
@@ -653,9 +689,6 @@
         gap: 1rem;
       }
 
-      .sound-toggle { align-self: flex-start; }
-      .sound-control { align-self: flex-start; }
-
       .workspace {
         grid-template-columns: 1fr;
       }
@@ -758,13 +791,17 @@
       <button  id="move-toggle" type="button" class="sound-toggle" aria-pressed="true" aria-label="Bloquear movimiento de campanas"> <span id="move-on-state" class="toggle-state"> <i data-lucide="move" aria-hidden="true" style="width:20px;height:20px"></i> <span data-template-id="move-on-button" class="canva-text"></span> </span> <span id="move-off-state" class="toggle-state hidden"> <i data-lucide="lock" aria-hidden="true" style="width:20px;height:20px"></i> <span data-template-id="move-off-button" class="canva-text"></span> </span> </button>
       <!--SOUND CONTROL-->
       <div class="sound-control" role="group" aria-label="Control de volumen">
-       <label for="sound-volume-input">Volumen</label>
-       <input id="sound-volume-input" type="range" min="0" max="50" step="0.1" value="1.5" aria-label="Volumen de campanas y metrónomo">
-       <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">1.5</output>
-       <button id="sound-toggle" type="button" class="sound-mute-toggle" aria-pressed="false" aria-label="Silenciar sonidos">
-        <i data-lucide="volume-2" id="sound-on-icon" aria-hidden="true" style="width:19px;height:19px"></i>
-        <i data-lucide="volume-x" id="sound-off-icon" class="hidden" aria-hidden="true" style="width:19px;height:19px"></i>
-       </button>
+       <div class="sound-control-row">
+        <label for="sound-volume-input">Volumen</label>
+        <input id="sound-volume-input" type="range" min="0" max="50" step="0.1" value="20" aria-label="Volumen de campanas y metrónomo">
+        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">20.0</output>
+        <button id="sound-help-toggle" type="button" class="sound-help-toggle" aria-expanded="false" aria-controls="sound-help-message">¿No se oye?</button>
+        <button id="sound-toggle" type="button" class="sound-mute-toggle" aria-pressed="false" aria-label="Silenciar sonidos">
+         <i data-lucide="volume-2" id="sound-on-icon" aria-hidden="true" style="width:19px;height:19px"></i>
+         <i data-lucide="volume-x" id="sound-off-icon" class="hidden" aria-hidden="true" style="width:19px;height:19px"></i>
+        </button>
+       </div>
+       <p id="sound-help-message" class="sound-help-message" hidden>Comprueba que el dispositivo no esté en silencio y que su volumen esté subido. Revisa también los permisos de esta página en tu navegador.</p>
       </div>
      </div>
     </header>
@@ -779,16 +816,18 @@
          <p data-template-id="empty-copy" class="canva-text"></p>
         </div>
        </div>
+       <!--TRASH ZONE-->
        <div id="trash-zone" data-template-id="trash-zone" class="canva-panel trash-zone" aria-hidden="true"><i data-lucide="trash-2" aria-hidden="true" style="width:22px;height:22px"></i> <span data-template-id="trash-label" class="canva-text"></span>
        </div>
        <div class="stage-caption" aria-hidden="true"><i data-lucide="move" style="width:15px;height:15px"></i> mover libremente
        </div>
+       <!--BELL SIZE CONTROL-->
        <div data-template-id="bell-size-control" class="canva-panel stage-size-control"><label data-template-id="bell-size-label" class="canva-text text-[10px] uppercase tracking-wider font-bold text-[#655b51]" for="bell-size-input">Tamaño</label><input id="bell-size-input" type="range" min="60" max="240" value="120" step="1" aria-label="Ajustar tamaño de las campanas">
        </div>
       </section>
       <aside data-template-id="selection-pane" class="canva-sidebar selection-pane" aria-labelledby="selection-title">
        <div class="selection-pane-header-row">
-        <div class="selection-pane-heading"><i data-lucide="circle-plus" aria-hidden="true" style="width:21px;height:21px"></i>
+        <div class="selection-pane-heading"><i data-lucide="plus-circle" aria-hidden="true" style="width:21px;height:21px"></i>
          <h2 id="selection-title" data-template-id="selection-title" class="canva-text"></h2>
         </div>
         <p data-template-id="selection-help" class="canva-text selection-pane-copy"></p>
@@ -796,7 +835,7 @@
        <div class="palette-list" aria-label="Círculos musicales disponibles">
         <div data-template-id="octave-3-heading" class="canva-text octave-heading">
          3ª octava
-        </div><button type="button" data-template-id="palette-do3" class="canva-button palette-note" data-note-name="DO" data-note-type="do3" data-frequency="130.81" aria-label="Añadir un campana DO3"> <span data-template-id="palette-do3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-re3" class="canva-button palette-note" data-note-name="RE" data-note-type="re3" data-frequency="146.83" aria-label="Añadir una campana RE3"> <span data-template-id="palette-re3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-mi3" class="canva-button palette-note" data-note-name="MI" data-note-type="mi3" data-frequency="164.81" aria-label="Añadir un círculo MI3"> <span data-template-id="palette-mi3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-fa3" class="canva-button palette-note" data-note-name="FA" data-note-type="fa3" data-frequency="174.61" aria-label="Añadir un círculo FA3"> <span data-template-id="palette-fa3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-sol3" class="canva-button palette-note" data-note-name="SOL" data-note-type="sol3" data-frequency="196.00" aria-label="Añadir un círculo SOL3"> <span data-template-id="palette-sol3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-la3" class="canva-button palette-note" data-note-name="LA" data-note-type="la3" data-frequency="220.00" aria-label="Añadir un círculo LA3"> <span data-template-id="palette-la3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-si3" class="canva-button palette-note" data-note-name="SI" data-note-type="si3" data-frequency="246.94" aria-label="Añadir un círculo SI3"> <span data-template-id="palette-si3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-dos3" class="canva-button palette-note" data-note-name="DO#" data-note-type="dos3" data-frequency="138.59" aria-label="Añadir DO sostenido 3"><span data-template-id="palette-dos3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-res3" class="canva-button palette-note" data-note-name="RE#" data-note-type="res3" data-frequency="155.56" aria-label="Añadir RE sostenido 3"><span data-template-id="palette-res3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-mis3" class="canva-button palette-note" data-note-name="MI#" data-note-type="mis3" data-frequency="174.61" aria-label="Añadir MI sostenido 3"><span data-template-id="palette-mis3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-fas3" class="canva-button palette-note" data-note-name="FA#" data-note-type="fas3" data-frequency="185.00" aria-label="Añadir FA sostenido 3"><span data-template-id="palette-fas3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sols3" class="canva-button palette-note" data-note-name="SOL#" data-note-type="sols3" data-frequency="207.65" aria-label="Añadir SOL sostenido 3"><span data-template-id="palette-sols3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-las3" class="canva-button palette-note" data-note-name="LA#" data-note-type="las3" data-frequency="233.08" aria-label="Añadir LA sostenido 3"><span data-template-id="palette-las3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sis3" class="canva-button palette-note" data-note-name="SI#" data-note-type="sis3" data-frequency="261.63" aria-label="Añadir SI sostenido 3"><span data-template-id="palette-sis3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button>
+        </div><button type="button" data-template-id="palette-do3" class="canva-button palette-note" data-note-name="DO" data-note-type="do3" data-frequency="130.81" aria-label="Añadir una campana DO3"> <span data-template-id="palette-do3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-re3" class="canva-button palette-note" data-note-name="RE" data-note-type="re3" data-frequency="146.83" aria-label="Añadir una campana RE3"> <span data-template-id="palette-re3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-mi3" class="canva-button palette-note" data-note-name="MI" data-note-type="mi3" data-frequency="164.81" aria-label="Añadir un círculo MI3"> <span data-template-id="palette-mi3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-fa3" class="canva-button palette-note" data-note-name="FA" data-note-type="fa3" data-frequency="174.61" aria-label="Añadir un círculo FA3"> <span data-template-id="palette-fa3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-sol3" class="canva-button palette-note" data-note-name="SOL" data-note-type="sol3" data-frequency="196.00" aria-label="Añadir un círculo SOL3"> <span data-template-id="palette-sol3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-la3" class="canva-button palette-note" data-note-name="LA" data-note-type="la3" data-frequency="220.00" aria-label="Añadir un círculo LA3"> <span data-template-id="palette-la3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-si3" class="canva-button palette-note" data-note-name="SI" data-note-type="si3" data-frequency="246.94" aria-label="Añadir un círculo SI3"> <span data-template-id="palette-si3-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-dos3" class="canva-button palette-note" data-note-name="DO#" data-note-type="dos3" data-frequency="138.59" aria-label="Añadir DO sostenido 3"><span data-template-id="palette-dos3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-res3" class="canva-button palette-note" data-note-name="RE#" data-note-type="res3" data-frequency="155.56" aria-label="Añadir RE sostenido 3"><span data-template-id="palette-res3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-mis3" class="canva-button palette-note" data-note-name="MI#" data-note-type="mis3" data-frequency="174.61" aria-label="Añadir MI sostenido 3"><span data-template-id="palette-mis3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-fas3" class="canva-button palette-note" data-note-name="FA#" data-note-type="fas3" data-frequency="185.00" aria-label="Añadir FA sostenido 3"><span data-template-id="palette-fas3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sols3" class="canva-button palette-note" data-note-name="SOL#" data-note-type="sols3" data-frequency="207.65" aria-label="Añadir SOL sostenido 3"><span data-template-id="palette-sols3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-las3" class="canva-button palette-note" data-note-name="LA#" data-note-type="las3" data-frequency="233.08" aria-label="Añadir LA sostenido 3"><span data-template-id="palette-las3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sis3" class="canva-button palette-note" data-note-name="SI#" data-note-type="sis3" data-frequency="261.63" aria-label="Añadir SI sostenido 3"><span data-template-id="palette-sis3-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button>
         <div data-template-id="octave-4-heading" class="canva-text octave-heading">
          4ª octava
         </div><button type="button" data-template-id="palette-do" class="canva-button palette-note" data-note-name="DO" data-note-type="do" data-frequency="261.63" aria-label="Añadir un círculo DO"> <span data-template-id="palette-do-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-re" class="canva-button palette-note" data-note-name="RE" data-note-type="re" data-frequency="293.66" aria-label="Añadir un círculo RE"> <span data-template-id="palette-re-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-mi" class="canva-button palette-note" data-note-name="MI" data-note-type="mi" data-frequency="329.63" aria-label="Añadir un círculo MI"> <span data-template-id="palette-mi-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-fa" class="canva-button palette-note" data-note-name="FA" data-note-type="fa" data-frequency="349.23" aria-label="Añadir un círculo FA"> <span data-template-id="palette-fa-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-sol" class="canva-button palette-note" data-note-name="SOL" data-note-type="sol" data-frequency="392.00" aria-label="Añadir un círculo SOL"> <span data-template-id="palette-sol-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-la" class="canva-button palette-note" data-note-name="LA" data-note-type="la" data-frequency="440.00" aria-label="Añadir un círculo LA"> <span data-template-id="palette-la-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-si" class="canva-button palette-note" data-note-name="SI" data-note-type="si" data-frequency="493.88" aria-label="Añadir un círculo SI"> <span data-template-id="palette-si-label" class="canva-text palette-label"></span> <span class="add-mark" aria-hidden="true"><i data-lucide="plus" style="width:17px;height:17px"></i></span> </button> <button type="button" data-template-id="palette-dos" class="canva-button palette-note" data-note-name="DO#" data-note-type="dos" data-frequency="277.18" aria-label="Añadir DO sostenido"><span data-template-id="palette-dos-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-res" class="canva-button palette-note" data-note-name="RE#" data-note-type="res" data-frequency="311.13" aria-label="Añadir RE sostenido"><span data-template-id="palette-res-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-mis" class="canva-button palette-note" data-note-name="MI#" data-note-type="mis" data-frequency="349.23" aria-label="Añadir MI sostenido"><span data-template-id="palette-mis-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-fas" class="canva-button palette-note" data-note-name="FA#" data-note-type="fas" data-frequency="369.99" aria-label="Añadir FA sostenido"><span data-template-id="palette-fas-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sols" class="canva-button palette-note" data-note-name="SOL#" data-note-type="sols" data-frequency="415.30" aria-label="Añadir SOL sostenido"><span data-template-id="palette-sols-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-las" class="canva-button palette-note" data-note-name="LA#" data-note-type="las" data-frequency="466.16" aria-label="Añadir LA sostenido"><span data-template-id="palette-las-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button><button type="button" data-template-id="palette-sis" class="canva-button palette-note" data-note-name="SI#" data-note-type="sis" data-frequency="523.25" aria-label="Añadir SI sostenido"><span data-template-id="palette-sis-label" class="canva-text palette-label"></span><span class="add-mark" aria-hidden="true"><i data-lucide="plus"></i></span></button>
@@ -826,6 +865,8 @@
     const trashZone = document.getElementById("trash-zone");
     const emptyState = document.getElementById("empty-state");
     const soundToggle = document.getElementById("sound-toggle");
+    const soundHelpToggle = document.getElementById("sound-help-toggle");
+    const soundHelpMessage = document.getElementById("sound-help-message");
     const soundVolumeInput = document.getElementById("sound-volume-input");
     const soundVolumeValue = document.getElementById("sound-volume-value");
     const moveToggle = document.getElementById("move-toggle");
@@ -912,7 +953,7 @@
       "empty-copy": "Elige una campana o arrástrala aquí para empezar.",
       "trash-label": "Suelta aquí para eliminar",
       "selection-title": "Elige tus campanas",
-      "selection-help": "Pulsa o arrastrala una campana para añadirla al escritorio.",
+      "selection-help": "Pulsa una campana o arrástrala al escritorio.",
       "keyboard-hint": "En el escritorio: Enter o Espacio reproduce una campana; las flechas la mueven y Suprimir la elimina."
     };
 
@@ -938,10 +979,26 @@
     });
 
     function ensureAudioContext() {
+      if (audioContext && audioContext.state === "closed") {
+        audioContext = null;
+      }
+
       if (!audioContext) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) return null;
-        audioContext = new AudioContextClass();
+        const context = new AudioContextClass();
+        audioContext = context;
+        context.addEventListener("statechange", () => {
+          if (audioContext !== context) return;
+
+          if (context.state === "running") {
+            if (isMetroPlaying) restartMetronomeScheduler(context);
+          } else {
+            window.clearTimeout(metroTimerId);
+            metroTimerId = null;
+            if (context.state === "closed") audioContext = null;
+          }
+        });
       }
       return audioContext;
     }
@@ -975,8 +1032,8 @@
     }
 
     async function playFrequency(frequency, visualElement, noteName) {
-      if (muted) {
-        showStatus("El sonido está silenciado");
+      if (muted || soundVolume <= 0) {
+        showStatus(muted ? "El sonido está silenciado" : "Sube el volumen para escuchar las campanas y el metrónomo");
         return;
       }
 
@@ -1120,7 +1177,7 @@
       const name = circle.dataset.noteName;
       circle.remove();
       updateEmptyState();
-      showStatus("Campana " + name + " eliminado");
+      showStatus("Campana " + name + " eliminada");
     }
 
     function attachCircleInteractions(circle) {
@@ -1235,7 +1292,23 @@
       return ghost;
     }
 
+    function addPaletteNote(palette, clientX, clientY) {
+      const data = {
+        name: palette.dataset.noteName,
+        type: palette.dataset.noteType,
+        frequency: Number(palette.dataset.frequency)
+      };
+      const circle = createCircle(data, clientX, clientY);
+      playFrequency(data.frequency, circle, data.name);
+      showStatus("Círculo " + data.name + " añadido");
+    }
+
     paletteNotes.forEach((palette) => {
+      palette.addEventListener("click", (event) => {
+        if (event.detail !== 0) return;
+        addPaletteNote(palette);
+      });
+
       palette.addEventListener("pointerdown", (event) => {
         if (event.button !== undefined && event.button !== 0) return;
 
@@ -1279,22 +1352,12 @@
           palette.releasePointerCapture(event.pointerId);
         }
 
-        const data = {
-          name: palette.dataset.noteName,
-          type: palette.dataset.noteType,
-          frequency: Number(palette.dataset.frequency)
-        };
-
         if (!cancelled && drag.moved && isPointInStage(event.clientX, event.clientY)) {
-          const circle = createCircle(data, event.clientX, event.clientY);
-          playFrequency(data.frequency, circle, data.name);
-          showStatus("Círculo " + data.name + " añadido al patio de recreo");
+          addPaletteNote(palette, event.clientX, event.clientY);
         } else if (!cancelled && !drag.moved) {
-          const circle = createCircle(data);
-          playFrequency(data.frequency, circle, data.name);
-          showStatus("Círculo " + data.name + " añadido");
+          addPaletteNote(palette);
         } else if (!cancelled && drag.moved) {
-          showStatus("Suelta el campana dentro del patio de recreo");
+          showStatus("Suelta la campana dentro del área de juego");
         }
 
         event.preventDefault();
@@ -1307,7 +1370,7 @@
     moveToggle.addEventListener("click", () => {
       movementEnabled = !movementEnabled;
       moveToggle.setAttribute("aria-pressed", String(movementEnabled));
-      moveToggle.setAttribute("aria-label", movementEnabled ? "Bloquear movimiento de círculos" : "Activar movimiento de círculos");
+      moveToggle.setAttribute("aria-label", movementEnabled ? "Bloquear movimiento de campanas" : "Activar movimiento de campanas");
       moveOnState.classList.toggle("hidden", !movementEnabled);
       moveOffState.classList.toggle("hidden", movementEnabled);
       showStatus(movementEnabled ? "Movimiento activado" : "Movimiento bloqueado");
@@ -1335,6 +1398,12 @@
       soundVolumeValue.textContent = soundVolume.toFixed(1);
     });
 
+    soundHelpToggle.addEventListener("click", () => {
+      const isExpanded = soundHelpToggle.getAttribute("aria-expanded") === "true";
+      soundHelpToggle.setAttribute("aria-expanded", String(!isExpanded));
+      soundHelpMessage.hidden = isExpanded;
+    });
+
     // Metronome Scheduling Logic
     function nextMetronomeBeat() {
       const secondsPerBeat = 60.0 / metroTempo;
@@ -1342,7 +1411,7 @@
     }
 
     function scheduleMetronomeBeat(time) {
-      if (muted) return;
+      if (muted || soundVolume <= 0) return;
       const context = ensureAudioContext();
       if (!context) return;
 
@@ -1375,13 +1444,21 @@
     }
 
     function metronomeScheduler() {
-      const context = ensureAudioContext();
-      if (!context) return;
+      metroTimerId = null;
+      const context = audioContext;
+      if (!isMetroPlaying || !context || context.state !== "running") return;
       while (metroNextNoteTime < context.currentTime + metroScheduleAheadTime) {
         scheduleMetronomeBeat(metroNextNoteTime);
         nextMetronomeBeat();
       }
       metroTimerId = setTimeout(metronomeScheduler, metroLookahead);
+    }
+
+    function restartMetronomeScheduler(context) {
+      if (!isMetroPlaying || context.state !== "running") return;
+      window.clearTimeout(metroTimerId);
+      metroNextNoteTime = context.currentTime + 0.05;
+      metronomeScheduler();
     }
 
     async function toggleMetronome() {
@@ -1396,9 +1473,14 @@
         metroToggle.setAttribute("aria-label", "Detener metrónomo");
         showStatus("Metrónomo iniciado");
         metronomeScheduler();
+      } else if (!audioContext || audioContext.state !== "running") {
+        const context = await activateAudioContext();
+        if (!context) return;
+        restartMetronomeScheduler(context);
       } else {
         isMetroPlaying = false;
         clearTimeout(metroTimerId);
+        metroTimerId = null;
         metroPlayIcon.classList.remove("hidden");
         metroStopIcon.classList.add("hidden");
         metroToggle.classList.replace("bg-[#27231f]", "bg-[#ef4438]");
