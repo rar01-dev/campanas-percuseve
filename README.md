@@ -3,4 +3,4 @@ Esta web permite al usuario tocar diferentes melodías con diferentes notas de f
 
 ENLACE A LA WEB: [https://rar01-dev.github.io/campanas-percuseve/](https://rar01-dev.github.io/campanas-percuseve/)
 
-**Versión 1.4**
+**Versión 1.5.1**
