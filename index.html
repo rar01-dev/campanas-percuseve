@@ -1051,6 +1051,10 @@
       }, 1500);
     }
 
+    function getVolumeGain(maxGain) {
+      return maxGain * Math.pow(soundVolume / 100, 1.5);
+    }
+
     async function playFrequency(frequency, visualElement, noteName) {
       if (muted || soundVolume <= 0) {
         showStatus(muted ? "El sonido está silenciado" : "Sube el volumen para escuchar las campanas y el metrónomo");
@@ -1064,7 +1068,7 @@
 
       const now = context.currentTime;
       const baseFreq = Number(frequency);
-      const level = Math.pow(soundVolume / 100, 2) * 0.5;
+      const level = getVolumeGain(0.55);
       const partials = [
         { ratio: 1.0, amp: 1.0, decay: 1.4 },
         { ratio: 2.0, amp: 0.45, decay: 0.9 },
@@ -1444,12 +1448,12 @@
       const gainNode = context.createGain();
 
       osc.connect(gainNode);
-      gainNode.connect(context.destination);
+      gainNode.connect(masterBus);
 
       // Metronome woodblock-like click sound
       osc.frequency.setValueAtTime(1000, time);
       gainNode.gain.setValueAtTime(0.001, time);
-      gainNode.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.1 * soundVolume / 1.5), time + 0.002);
+      gainNode.gain.exponentialRampToValueAtTime(Math.max(0.001, getVolumeGain(0.25)), time + 0.002);
       gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
       osc.start(time);
