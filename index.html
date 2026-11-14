@@ -794,7 +794,7 @@
        <div class="sound-control-row">
         <label for="sound-volume-input">Volumen</label>
         <input id="sound-volume-input" type="range" min="0" max="100" step="1.0" value="50" aria-label="Volumen de campanas y metrónomo">
-        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">100.0</output>
+        <output id="sound-volume-value" class="sound-volume-value" for="sound-volume-input">50.0</output>
         <button id="sound-help-toggle" type="button" class="sound-help-toggle" aria-expanded="false" aria-controls="sound-help-message">¿No se oye?</button>
         <button id="sound-toggle" type="button" class="sound-mute-toggle" aria-pressed="false" aria-label="Silenciar sonidos">
          <i data-lucide="volume-2" id="sound-on-icon" aria-hidden="true" style="width:19px;height:19px"></i>
@@ -884,6 +884,8 @@
     const bellSizeInput = document.getElementById("bell-size-input");
 
     let audioContext = null;
+    let masterBus = null;
+    let compressor = null;
     let muted = false;
     let soundVolume = Number(soundVolumeInput.value);
     let statusTimer = null;
@@ -988,6 +990,7 @@
         if (!AudioContextClass) return null;
         const context = new AudioContextClass();
         audioContext = context;
+        setupMasterChain(context);
         context.addEventListener("statechange", () => {
           if (audioContext !== context) return;
 
@@ -996,11 +999,30 @@
           } else {
             window.clearTimeout(metroTimerId);
             metroTimerId = null;
-            if (context.state === "closed") audioContext = null;
+            if (context.state === "closed") {
+              audioContext = null;
+              masterBus = null;
+              compressor = null;
+            }
           }
         });
       }
       return audioContext;
+    }
+
+    function setupMasterChain(context) {
+      compressor = context.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-12, context.currentTime);
+      compressor.knee.setValueAtTime(10, context.currentTime);
+      compressor.ratio.setValueAtTime(4, context.currentTime);
+      compressor.attack.setValueAtTime(0.003, context.currentTime);
+      compressor.release.setValueAtTime(0.25, context.currentTime);
+
+      masterBus = context.createGain();
+      masterBus.gain.setValueAtTime(0.8, context.currentTime);
+
+      masterBus.connect(compressor);
+      compressor.connect(context.destination);
     }
 
     async function activateAudioContext() {
@@ -1040,32 +1062,37 @@
       const context = await activateAudioContext();
       if (!context) return;
 
+      if (!masterBus) setupMasterChain(context);
+
       const now = context.currentTime;
-      const masterGain = context.createGain();
-      const oscillator = context.createOscillator();
-      const warmth = context.createOscillator();
-      const warmthGain = context.createGain();
+      const baseFreq = Number(frequency);
+      const level = Math.pow(soundVolume / 100, 2) * 0.5;
+      const partials = [
+        { ratio: 1.0, amp: 1.0, decay: 1.4 },
+        { ratio: 2.0, amp: 0.45, decay: 0.9 },
+        { ratio: 2.42, amp: 0.30, decay: 0.45 },
+        { ratio: 3.0, amp: 0.20, decay: 0.35 },
+        { ratio: 4.18, amp: 0.12, decay: 0.15 }
+      ];
 
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(Number(frequency), now);
-      warmth.type = "triangle";
-      warmth.frequency.setValueAtTime(Number(frequency) * 2, now);
-      warmthGain.gain.setValueAtTime(0.018, now);
+      partials.forEach((partial) => {
+        const oscillator = context.createOscillator();
+        const partialGain = context.createGain();
 
-      // Mantiene el tono audible sin saturar ni sonar excesivamente fuerte.
-      masterGain.gain.setValueAtTime(0.0001, now);
-      masterGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, soundVolume), now + 0.018);
-      masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(baseFreq * partial.ratio, now);
 
-      oscillator.connect(masterGain);
-      warmth.connect(warmthGain);
-      warmthGain.connect(masterGain);
-      masterGain.connect(context.destination);
+        const peakGain = Math.max(0.0001, level * partial.amp);
+        partialGain.gain.setValueAtTime(0.0001, now);
+        partialGain.gain.exponentialRampToValueAtTime(peakGain, now + 0.005);
+        partialGain.gain.exponentialRampToValueAtTime(0.0001, now + partial.decay);
 
-      oscillator.start(now);
-      warmth.start(now);
-      oscillator.stop(now + 0.62);
-      warmth.stop(now + 0.62);
+        oscillator.connect(partialGain);
+        partialGain.connect(masterBus);
+
+        oscillator.start(now);
+        oscillator.stop(now + partial.decay + 0.05);
+      });
 
       if (visualElement.classList.contains("note-circle")) {
         visualElement.classList.remove("is-playing");
